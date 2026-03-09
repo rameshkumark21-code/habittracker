@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 from datetime import date, timedelta, datetime
 import pytz
-from streamlit_gsheets import GSheetsConnection
+from st_gsheets_connection import GSheetsConnection
 import uuid
 import calendar as cal_module
 
