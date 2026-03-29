@@ -772,22 +772,7 @@ def screen_today():
         streak    = compute_habit_streak(h_id, logs_df)
         dots_html = _make_7day_dots(h_id, h_created, logs_df, today)
 
-        col_tog, col_body = st.columns([1, 7], gap="small")
-
-        with col_tog:
-            if is_done:
-                st.markdown('<div class="tog-done">', unsafe_allow_html=True)
-                if st.button("✓", key=f"tog_{h_id}_{log_date_str}"):
-                    delete_log(h_id, log_date_str)
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="tog-pend">', unsafe_allow_html=True)
-                if st.button("○", key=f"tog_{h_id}_{log_date_str}"):
-                    write_log(h_id, h_name, log_date_str)
-                    st.toast(f"✓ {h_name}", icon="🎯")
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+        col_body, col_tog = st.columns([7, 1])
 
         with col_body:
             name_style  = (
@@ -807,6 +792,21 @@ def screen_today():
                     {dots_html}
                 </div>
             </div>""", unsafe_allow_html=True)
+
+        with col_tog:
+            if is_done:
+                st.markdown('<div class="tog-done">', unsafe_allow_html=True)
+                if st.button("✓", key=f"tog_{h_id}_{log_date_str}"):
+                    delete_log(h_id, log_date_str)
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="tog-pend">', unsafe_allow_html=True)
+                if st.button("○", key=f"tog_{h_id}_{log_date_str}"):
+                    write_log(h_id, h_name, log_date_str)
+                    st.toast(f"✓ {h_name}", icon="🎯")
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)  # /habit-table
 
