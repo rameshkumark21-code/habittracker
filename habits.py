@@ -268,47 +268,27 @@ def get_today_status(active_habits: pd.DataFrame, logs_df: pd.DataFrame):
 #  HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _make_7day_dots(habit_id: str, created_date: str,
+def _make_7day_text(habit_id: str, created_date: str,
                     logs_df: pd.DataFrame, today: date) -> str:
-    """7 small coloured circles: green=done, red=missed, grey=pending/N/A."""
+    """7-char string: ● done  ✕ missed  ○ pending today  · N/A"""
     completed_dates: set[str] = set()
     if not logs_df.empty:
         completed_dates = set(
             logs_df[logs_df["HabitID"].astype(str) == habit_id]["Date"].tolist()
         )
-
-    dots = []
+    chars = []
     for i in range(6, -1, -1):
         d     = today - timedelta(days=i)
         d_str = d.isoformat()
         if d_str < created_date:
-            bg, title = C["surface2"], "N/A"
-            opacity   = "0.25"
+            chars.append("·")
         elif d_str in completed_dates:
-            bg, title = C["income"], "Done"
-            opacity   = "1"
+            chars.append("●")
         elif d == today:
-            bg, title = C["border"], "Pending"
-            opacity   = "1"
+            chars.append("○")
         else:
-            bg, title = C["expense"], "Missed"
-            opacity   = "0.55"
-
-        day_label = d.strftime("%a")
-        dots.append(
-            f'<span title="{day_label}: {title}" style="'
-            f'width:7px;height:7px;border-radius:50%;'
-            f'background:{bg};opacity:{opacity};'
-            f'display:inline-block;flex-shrink:0;'
-            f'cursor:default"></span>'
-        )
-
-    return (
-        '<div style="display:flex;gap:3px;align-items:center">'
-        + "".join(dots)
-        + "</div>"
-    )
-
+            chars.append("✕")
+    return " ".join(chars)
 
 def _week_completion_pct(active_habits: pd.DataFrame, logs_df: pd.DataFrame) -> int:
     """% of habit-days completed in the last 7 days."""
@@ -400,60 +380,51 @@ footer, #MainMenu {{ display:none !important; }}
     height:100%; border-radius:100px; transition:width .5s ease;
 }}
 
-/* ── COMPACT HABIT TABLE ── */
-.habit-table {{
-    background:{C["surface"]};
-    border:1px solid {C["border"]};
-    border-radius:14px;
-    overflow:hidden;
-    margin:6px 0;
-}}
-
-/* Remove default Streamlit vertical gaps inside habit-table */
-.habit-table > div > div > div[data-testid="stVerticalBlock"] {{
-    gap:0 !important;
-}}
-.habit-table [data-testid="stHorizontalBlock"] {{
-    gap:4px !important;
-    align-items:center !important;
-    padding:0 8px !important;
-    border-bottom:1px solid {C["surface2"]};
-    min-height:40px;
-}}
-.habit-table [data-testid="stHorizontalBlock"]:last-child {{
-    border-bottom:none;
-}}
-.habit-table [data-testid="column"] {{
-    padding:0 !important;
-    overflow:visible !important;
-}}
-
-/* ── COMPACT ROW BODY ── */
-.hrow {{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    padding:5px 4px 5px 0;
-    min-height:36px;
+/* ── DATA EDITOR — dark theme ── */
+[data-testid="stDataEditor"] {{
+    border:1px solid {C["border"]} !important;
+    border-radius:12px !important;
     overflow:hidden;
 }}
-.hrow.done {{
-    opacity:.75;
+[data-testid="stDataEditor"] .dvn-scroller {{
+    background:{C["surface"]} !important;
 }}
-.hrow-name {{
-    flex:1;
-    font-size:.82rem;
-    font-weight:700;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    min-width:0;
+/* Header row */
+[data-testid="stDataEditor"] .gdg-header {{
+    background:{C["surface2"]} !important;
+    color:{C["muted"]} !important;
+    font-family:'Nunito',sans-serif !important;
+    font-size:.68rem !important;
+    font-weight:800 !important;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    border-bottom:1px solid {C["border"]} !important;
 }}
-.hrow-right {{
-    display:flex;
-    align-items:center;
-    gap:5px;
-    flex-shrink:0;
+/* Data cells */
+[data-testid="stDataEditor"] .gdg-cell {{
+    background:{C["surface"]} !important;
+    color:{C["text"]} !important;
+    font-family:'Nunito',sans-serif !important;
+    font-size:.82rem !important;
+    border-bottom:1px solid {C["surface2"]} !important;
+    border-right:none !important;
+}}
+/* Hover row */
+[data-testid="stDataEditor"] .gdg-row:hover .gdg-cell {{
+    background:{C["surface2"]} !important;
+}}
+/* Checkbox checked */
+[data-testid="stDataEditor"] input[type="checkbox"]:checked {{
+    accent-color:{C["income"]} !important;
+}}
+[data-testid="stDataEditor"] input[type="checkbox"] {{
+    accent-color:{C["primary"]} !important;
+    width:15px; height:15px;
+}}
+/* Remove outer border/shadow */
+[data-testid="stDataEditor"] > div {{
+    box-shadow:none !important;
+    border:none !important;
 }}
 
 /* ── STREAK BADGE ── */
@@ -480,32 +451,6 @@ footer, #MainMenu {{ display:none !important; }}
     background:{C["primary_dim"]} !important;
 }}
 
-/* ── TOGGLE DONE ── */
-.tog-done [data-testid="stButton"] > button {{
-    background:rgba(0,200,150,0.18) !important;
-    color:{C["income"]} !important;
-    border:1.5px solid {C["income"]} !important;
-    border-radius:50% !important;
-    width:30px !important; height:30px !important;
-    font-size:.9rem !important; padding:0 !important;
-    min-height:unset !important;
-}}
-
-/* ── TOGGLE PENDING ── */
-.tog-pend [data-testid="stButton"] > button {{
-    background:{C["surface2"]} !important;
-    color:{C["muted"]} !important;
-    border:1.5px solid {C["border"]} !important;
-    border-radius:50% !important;
-    width:30px !important; height:30px !important;
-    font-size:.9rem !important; padding:0 !important;
-    min-height:unset !important;
-}}
-.tog-pend [data-testid="stButton"] > button:hover {{
-    border-color:{C["income"]} !important;
-    color:{C["income"]} !important;
-    background:rgba(0,200,150,0.08) !important;
-}}
 
 /* ── PRIMARY / FORM SUBMIT ── */
 [data-testid="stFormSubmitButton"] > button,
@@ -745,24 +690,10 @@ def screen_today():
             day_logs      = logs_df[logs_df["Date"] == log_date_str]
             completed_ids = set(day_logs["HabitID"].astype(str).tolist())
 
-    # ── SECTION LABEL WITH DAY DOTS LEGEND ──────────────────────────────────
-    st.markdown(
-        f'<div style="display:flex;justify-content:space-between;align-items:center;'
-        f'margin:10px 2px 4px">'
-        f'<div class="section-label" style="margin:0">Today\'s Habits</div>'
-        f'<div style="display:flex;align-items:center;gap:8px;font-size:.6rem;color:{C["muted"]}">'
-        f'<span style="display:flex;align-items:center;gap:3px">'
-        f'<span style="width:7px;height:7px;background:{C["income"]};border-radius:50%;display:inline-block"></span>done</span>'
-        f'<span style="display:flex;align-items:center;gap:3px">'
-        f'<span style="width:7px;height:7px;background:{C["expense"]};opacity:.55;border-radius:50%;display:inline-block"></span>missed</span>'
-        f'<span style="font-size:.55rem;color:{C["muted"]}">← 7d</span>'
-        f'</div></div>',
-        unsafe_allow_html=True,
-    )
-
-    # ── COMPACT HABIT TABLE ──────────────────────────────────────────────────
-    st.markdown('<div class="habit-table">', unsafe_allow_html=True)
-
+    # ── HABIT TABLE (st.data_editor) ───────────────────────────────────────
+    # Build DataFrame for the editor
+    rows = []
+    habit_ids = []
     for _, habit in active.iterrows():
         h_id      = str(habit["HabitID"])
         h_name    = str(habit["Name"])
@@ -770,45 +701,57 @@ def screen_today():
         h_created = str(habit["CreatedDate"])
         is_done   = h_id in completed_ids
         streak    = compute_habit_streak(h_id, logs_df)
-        dots_html = _make_7day_dots(h_id, h_created, logs_df, today)
+        dots_text = _make_7day_text(h_id, h_created, logs_df, today)
+        streak_txt = f"🔥{streak}d" if streak > 0 else ""
+        rows.append({
+            "✓":       is_done,
+            "Habit":   f"{h_icon} {h_name}",
+            "🔥":      streak_txt,
+            "← 7d":    dots_text,
+        })
+        habit_ids.append(h_id)
 
-        col_body, col_tog = st.columns([7, 1])
+    orig_df = pd.DataFrame(rows)
 
-        with col_body:
-            name_style  = (
-                f"color:{C['income']};text-decoration:line-through"
-                if is_done else f"color:{C['text']}"
-            )
-            streak_html = (
-                f'<span class="streak-badge">🔥{streak}d</span>'
-                if streak > 0 else ""
-            )
-            st.markdown(f"""
-            <div class="hrow {'done' if is_done else ''}">
-                <span style="font-size:.9rem;flex-shrink:0">{h_icon}</span>
-                <span class="hrow-name" style="{name_style}">{h_name}</span>
-                <div class="hrow-right">
-                    {streak_html}
-                    {dots_html}
-                </div>
-            </div>""", unsafe_allow_html=True)
+    edited_df = st.data_editor(
+        orig_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "✓": st.column_config.CheckboxColumn(
+                "✓", width="small", help="Mark complete"
+            ),
+            "Habit": st.column_config.TextColumn(
+                "Habit", width="large", disabled=True
+            ),
+            "🔥": st.column_config.TextColumn(
+                "🔥", width="small", disabled=True
+            ),
+            "← 7d": st.column_config.TextColumn(
+                "← 7d", width="medium", disabled=True,
+                help="● done  ✕ missed  ○ today  · N/A"
+            ),
+        },
+        key=f"habit_editor_{log_date_str}",
+    )
 
-        with col_tog:
-            if is_done:
-                st.markdown('<div class="tog-done">', unsafe_allow_html=True)
-                if st.button("✓", key=f"tog_{h_id}_{log_date_str}"):
-                    delete_log(h_id, log_date_str)
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="tog-pend">', unsafe_allow_html=True)
-                if st.button("○", key=f"tog_{h_id}_{log_date_str}"):
-                    write_log(h_id, h_name, log_date_str)
-                    st.toast(f"✓ {h_name}", icon="🎯")
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+    # Detect toggled rows and persist to GSheets
+    changed = False
+    for i, (orig_row, edit_row) in enumerate(
+        zip(orig_df.itertuples(), edited_df.itertuples())
+    ):
+        if orig_row[1] != edit_row[1]:   # index 1 = "✓" column
+            h_id   = habit_ids[i]
+            h_name = active.iloc[i]["Name"]
+            if edit_row[1]:   # newly checked
+                write_log(h_id, h_name, log_date_str)
+                st.toast(f"✓ {h_name}", icon="🎯")
+            else:             # unchecked
+                delete_log(h_id, log_date_str)
+            changed = True
+    if changed:
+        st.rerun()
 
-    st.markdown('</div>', unsafe_allow_html=True)  # /habit-table
 
     # ── 21-DAY TREND (collapsed) ─────────────────────────────────────────────
     with st.expander("📊 21-day trend"):
